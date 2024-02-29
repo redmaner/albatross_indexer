@@ -1,4 +1,4 @@
-defmodule Indexer.Processes.Syncer do
+defmodule Indexer.Processes.LiveSyncer do
   require Logger
   use GenServer
 
@@ -12,7 +12,7 @@ defmodule Indexer.Processes.Syncer do
   end
 
   def handle_continue(:check_status, state) do
-    case Indexer.Model.Syncer.get_state() do
+    case Indexer.Model.Syncer.get_live_state() do
       {:error, reason} ->
         Logger.error("Error when retrieving state: #{inspect(reason)}")
         {:shutdown, reason}

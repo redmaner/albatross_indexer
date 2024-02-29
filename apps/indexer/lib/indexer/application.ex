@@ -32,7 +32,7 @@ defmodule Indexer.Application do
          pool_size: 3,
          auth_source: "admin"
        ]},
-      Indexer.Processes.Syncer
+      Indexer.Processes.LiveSyncer
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
