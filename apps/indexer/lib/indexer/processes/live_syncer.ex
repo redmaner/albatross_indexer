@@ -3,7 +3,7 @@ defmodule Indexer.Processes.LiveSyncer do
   use GenServer
 
   def init(_) do
-    state = %{}
+    state = %{cursor: 0}
     {:ok, state, {:continue, :check_status}}
   end
 
@@ -21,18 +21,58 @@ defmodule Indexer.Processes.LiveSyncer do
         Logger.info("Got empty cursor")
         {:noreply, state, {:continue, :init_state}}
 
-      cursor ->
+      %{docs: [%{"cursor" => cursor}]} ->
         Logger.info("Got a cursor: #{inspect(cursor)}")
-        {:noreply, state}
+        Process.send(self(), :check_height, [])
+
+        {:noreply, %{state | cursor: cursor}}
     end
   end
 
   def handle_continue(:init_state, state) do
-    case Indexer.Model.Syncer.init_state() do
-      :ok -> Logger.info("init state success")
-      something -> Logger.error("Unexpected case when init state: #{inspect(something)}")
-    end
+    with {:ok, number} <- get_current_height(),
+         :ok <- Indexer.Model.Syncer.init_live_state(number) do
+      Logger.info("Initialised new state")
 
+      Process.send(self(), :check_height, [])
+
+      {:noreply, %{state | cursor: number}}
+    else
+      {:error, reason} ->
+        Logger.error("encountered error initializing state: #{inspect(reason)}")
+        {:noreply, state}
+    end
+  end
+
+  def handle_info(:check_height, state) do
+    get_current_height()
+    |> should_sync_new_blocks?(state)
+  end
+
+  def should_sync_new_blocks?({:error, reason}, state) do
+    Logger.error("failed to retrieve block height: #{inspect(reason)}")
     {:noreply, state}
+  end
+
+  def should_sync_new_blocks?({:ok, new_height}, state = %{cursor: old_height}) when new_height > old_height do
+    Logger.info("New height. Syncing blocks from #{old_height} to #{new_height}")
+    {:noreply, state}
+  end
+
+  def should_sync_new_blocks?(_new_height, state) do
+    {:noreply, state}
+  end
+
+  def get_current_height() do
+    case Indexer.get_latest_block_number() do
+      {:ok, number} ->
+        {:ok,
+         number
+         |> Nimiqex.Policy.get_batch_from_block_number()
+         |> Nimiqex.Policy.get_block_number_for_batch()}
+
+      other ->
+        other
+    end
   end
 end

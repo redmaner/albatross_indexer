@@ -15,7 +15,7 @@ defmodule Indexer.Application do
     children = [
       # Starts a worker by calling: Indexer.Worker.start_link(arg)
       # {Indexer.Worker, arg}
-      {Nimiqex,
+      {Nimiqex.RPC,
        [
          name: :rpc_client,
          url: rpc_url,
@@ -28,7 +28,7 @@ defmodule Indexer.Application do
          name: :mongo,
          url: "mongodb://localhost:27017/albatross",
          username: "albatross",
-         password: "a safe password here",
+         password: "safepasswordorsomething",
          pool_size: 3,
          auth_source: "admin"
        ]},
