@@ -18,7 +18,7 @@ defmodule Indexer.Processes.LiveSyncer do
   end
 
   def handle_continue(:check_status, state) do
-    case Indexer.Model.Syncer.get_live_state() do
+    case Indexer.Model.LiveSyncer.get_live_state() do
       {:error, reason} ->
         Logger.error("Error when retrieving state: #{inspect(reason)}")
         {:shutdown, reason}
@@ -37,7 +37,8 @@ defmodule Indexer.Processes.LiveSyncer do
 
   def handle_continue(:init_state, state) do
     with {:ok, number} <- get_current_height(),
-         :ok <- Indexer.Model.Syncer.init_live_state(number) do
+         :ok <- create_history_syncer_jobs(number),
+         :ok <- Indexer.Model.LiveSyncer.init_live_state(number) do
       Logger.info("Initialised new state")
 
       Process.send(self(), :check_height, [])
@@ -48,6 +49,29 @@ defmodule Indexer.Processes.LiveSyncer do
         Logger.error("encountered error initializing state: #{inspect(reason)}")
         {:noreply, state}
     end
+  end
+
+  def create_history_syncer_jobs(current_height) do
+    genesis_height = Nimiqex.Policy.genesis_block_number()
+
+    Stream.iterate(0, &(&1 + 1))
+    |> Enum.reduce_while({[], genesis_height}, fn _, {jobs, start_number} ->
+      end_number = min(current_height, start_number + 10000)
+      continue = end_number < current_height
+
+      jobs = [Indexer.Model.SyncerJobs.new_job(start_number + 1, end_number) | jobs]
+
+      if continue do
+        {:cont, {jobs, end_number}}
+      else
+        {:halt, {jobs, end_number}}
+      end
+    end)
+    |> store_syncer_jobs()
+  end
+
+  def store_syncer_jobs({jobs, _}) do
+    Indexer.Model.SyncerJobs.insert_many(jobs)
   end
 
   def handle_info({ref, :ok}, state = %{tasks: tasks}) do
@@ -61,7 +85,7 @@ defmodule Indexer.Processes.LiveSyncer do
         Logger.warning("Unknown task reference received")
 
       %{start_number: start_number, end_number: end_number} ->
-        case Indexer.Model.Syncer.update_live_cursor(end_number) do
+        case Indexer.Model.LiveSyncer.update_live_cursor(end_number) do
           :ok ->
             Logger.info("Indexing from #{start_number} to #{end_number} complete")
 

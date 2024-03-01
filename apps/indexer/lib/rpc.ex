@@ -28,6 +28,7 @@ defmodule Indexer do
     batch_number
     |> Blockchain.get_inherents_by_block_number()
     |> Nimiqex.RPC.send(@client)
+    |> unwrap()
   end
 
   def unwrap({:error, reason}), do: {:error, reason}
