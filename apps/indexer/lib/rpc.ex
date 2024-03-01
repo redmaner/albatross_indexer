@@ -17,11 +17,11 @@ defmodule Indexer do
     |> unwrap()
   end
 
-
   def get_transactions_by_block_number(batch_number) do
     batch_number
     |> Blockchain.get_transactions_by_block_number()
     |> Nimiqex.RPC.send(@client)
+    |> unwrap()
   end
 
   def get_inherents_by_block_number(batch_number) do

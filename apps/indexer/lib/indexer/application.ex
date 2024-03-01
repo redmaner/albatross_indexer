@@ -32,6 +32,7 @@ defmodule Indexer.Application do
          pool_size: 3,
          auth_source: "admin"
        ]},
+      {PartitionSupervisor, child_spec: Task.Supervisor, name: Indexer.TaskSupervisors},
       Indexer.Processes.LiveSyncer
     ]
 
