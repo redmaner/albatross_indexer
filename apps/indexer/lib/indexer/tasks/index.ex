@@ -5,7 +5,7 @@ defmodule Indexer.Tasks.Index do
   """
 
   require Logger
-  @batch_size 25
+  @batch_size 100
 
   @dialyzer {:no_match, store_transactions: 2}
   @dialyzer {:no_match, store_inherents: 2}

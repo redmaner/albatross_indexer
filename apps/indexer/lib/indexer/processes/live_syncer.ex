@@ -8,6 +8,8 @@ defmodule Indexer.Processes.LiveSyncer do
   use GenServer
 
   @check_height_frequency :timer.seconds(30)
+  @history_syncer_job_size 1000
+
   @dialyzer {:no_match, handle_continue: 2}
 
   def init(_) do
@@ -64,7 +66,7 @@ defmodule Indexer.Processes.LiveSyncer do
 
     Stream.iterate(0, &(&1 + 1))
     |> Enum.reduce_while({[], genesis_height}, fn _, {jobs, start_number} ->
-      end_number = min(current_height, start_number + 1000)
+      end_number = min(current_height, start_number + @history_syncer_job_size)
       continue = end_number < current_height
 
       jobs = [Indexer.Model.SyncerJobs.new_job(start_number + 1, end_number) | jobs]

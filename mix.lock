@@ -13,6 +13,6 @@
   "mongodb_driver": {:hex, :mongodb_driver, "1.4.0", "15dd661c6c8d96ebf1d50ebf7e68e383a2b99b315e83fcbb452f715cb4f8703e", [:mix], [{:db_connection, "~> 2.6", [hex: :db_connection, repo: "hexpm", optional: false]}, {:decimal, "~> 2.1.1", [hex: :decimal, repo: "hexpm", optional: false]}, {:telemetry, "~> 1.0", [hex: :telemetry, repo: "hexpm", optional: false]}], "hexpm", "6bb7d580b0ea2a9f83a889de8eeeef849c68ea7d70804af14b4b0c2b09bb1c7a"},
   "nimble_options": {:hex, :nimble_options, "1.1.0", "3b31a57ede9cb1502071fade751ab0c7b8dbe75a9a4c2b5bbb0943a690b63172", [:mix], [], "hexpm", "8bbbb3941af3ca9acc7835f5655ea062111c9c27bcac53e004460dfd19008a99"},
   "nimble_pool": {:hex, :nimble_pool, "1.0.0", "5eb82705d138f4dd4423f69ceb19ac667b3b492ae570c9f5c900bb3d2f50a847", [:mix], [], "hexpm", "80be3b882d2d351882256087078e1b1952a28bf98d0a287be87e4a24a710b67a"},
-  "nimiqex": {:git, "git@github.com:redmaner/nimiqex.git", "2ea0f6afab8e91f90d86683908571508ec7e36fb", [tag: "0.6.1"]},
+  "nimiqex": {:git, "git@github.com:redmaner/nimiqex.git", "8adb10b0bd329b38ee5185e08cfba8a182f2f6f3", [tag: "0.7.0"]},
   "telemetry": {:hex, :telemetry, "1.2.1", "68fdfe8d8f05a8428483a97d7aab2f268aaff24b49e0f599faa091f1d4e7f61c", [:rebar3], [], "hexpm", "dad9ce9d8effc621708f99eac538ef1cbe05d6a874dd741de2e689c47feafed5"},
 }

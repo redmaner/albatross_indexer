@@ -1,33 +1,27 @@
 defmodule Indexer do
-  @client :rpc_client
 
   alias Nimiqex.RPC.Blockchain
-
-  def call(req) do
-    req
-    |> Nimiqex.RPC.send(@client)
-  end
 
   @doc """
   Returns the latest block number
   """
   def get_latest_block_number() do
     Blockchain.get_block_number()
-    |> Nimiqex.RPC.send(@client)
+    |> Nimiqex.RPC.send({:via, PartitionSupervisor, {Indexer.RPCPartition, self()}})
     |> unwrap()
   end
 
   def get_transactions_by_block_number(batch_number) do
     batch_number
     |> Blockchain.get_transactions_by_block_number()
-    |> Nimiqex.RPC.send(@client)
+    |> Nimiqex.RPC.send({:via, PartitionSupervisor, {Indexer.RPCPartition, batch_number}})
     |> unwrap()
   end
 
   def get_inherents_by_block_number(batch_number) do
     batch_number
     |> Blockchain.get_inherents_by_block_number()
-    |> Nimiqex.RPC.send(@client)
+    |> Nimiqex.RPC.send({:via, PartitionSupervisor, {Indexer.RPCPartition, batch_number}})
     |> unwrap()
   end
 

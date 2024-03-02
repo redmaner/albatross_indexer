@@ -8,7 +8,7 @@ defmodule Indexer.Processes.JobSyncer do
   require Logger
   use GenServer
 
-  @max_concurrent_jobs 8
+  @max_concurrent_jobs 32
   @load_job_frequency :timer.seconds(300)
 
   def init(_) do
@@ -86,7 +86,6 @@ defmodule Indexer.Processes.JobSyncer do
         {:noreply, %{state | load_job_timer: timer}}
 
       %{docs: docs} when is_list(docs) ->
-        Logger.info("Starting #{length(docs)} jobs with status NEW")
         timer = Process.send_after(self(), :load_jobs, @load_job_frequency)
 
         case start_jobs(tasks, docs) do
@@ -156,7 +155,7 @@ defmodule Indexer.Processes.JobSyncer do
 
     %{ref: ref} =
       Task.Supervisor.async(
-        {:via, PartitionSupervisor, {Indexer.TaskSupervisors, self()}},
+        {:via, PartitionSupervisor, {Indexer.TaskSupervisors, end_number}},
         Indexer.Tasks.Index,
         :start,
         [start_number, end_number, do_delete]

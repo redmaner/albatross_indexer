@@ -15,21 +15,25 @@ defmodule Indexer.Application do
     children = [
       # Starts a worker by calling: Indexer.Worker.start_link(arg)
       # {Indexer.Worker, arg}
-      {Nimiqex.RPC,
-       [
-         name: :rpc_client,
-         url: rpc_url,
-         use_auth: rpc_auth,
-         username: rpc_username,
-         password: rpc_password
-       ]},
+
+      {PartitionSupervisor,
+        child_spec: Nimiqex.RPC.child_spec(
+        [
+          url: rpc_url,
+          use_auth: rpc_auth,
+          username: rpc_username,
+          password: rpc_password,
+          pool_count: 25
+        ]),
+        name: Indexer.RPCPartition
+      },
       {Mongo,
        [
          name: :mongo,
          url: "mongodb://localhost:27017/albatross",
          username: "albatross",
          password: "safepasswordorsomething",
-         pool_size: System.schedulers_online(),
+         pool_size: 32,
          auth_source: "admin"
        ]},
       {PartitionSupervisor, child_spec: Task.Supervisor, name: Indexer.TaskSupervisors},
