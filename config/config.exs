@@ -9,10 +9,9 @@
 # move said applications out of the umbrella.
 import Config
 
-# Sample configuration:
-#
-#     config :logger, :console,
-#       level: :info,
-#       format: "$date $time [$level] $metadata$message\n",
-#       metadata: [:user_id]
-#
+config :logger, :console,
+  format: "[$date] [$time] [$level] $metadata | $message\n",
+  metadata: [:pid, :module]
+
+config :nimiqex,
+  policy_genesis_block_number: 16_335_524

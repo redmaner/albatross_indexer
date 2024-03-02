@@ -2,6 +2,8 @@ defmodule Indexer.Model.SyncerJobs do
   @name :mongo
   @collection_name "syncer_jobs"
 
+  @dialyzer {:no_match, insert_many: 1}
+
   def new_job(start_number, end_number, delete_first \\ false) do
     %{
       "start_number" => start_number,
@@ -23,6 +25,8 @@ defmodule Indexer.Model.SyncerJobs do
 
   def set_job_to_in_progress(id), do: set_job_to_status_by_id(id, "IN_PROGRESS")
 
+  def set_job_to_completed(id), do: set_job_to_status_by_id(id, "COMPLETED")
+
   defp set_job_to_status_by_id(id, status) do
     with {:ok, session} <- Mongo.Session.start_session(@name, :write),
          {:ok, _result} <-
@@ -37,5 +41,10 @@ defmodule Indexer.Model.SyncerJobs do
          :ok <- Mongo.Session.end_session(@name, session) do
       :ok
     end
+  end
+
+  def get_by_status(status, count \\ 5) do
+    @name
+    |> Mongo.find(@collection_name, %{status: status}, limit: count, sort: %{"end_number" => -1})
   end
 end

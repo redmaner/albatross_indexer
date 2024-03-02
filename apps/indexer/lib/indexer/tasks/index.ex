@@ -1,6 +1,9 @@
 defmodule Indexer.Tasks.Index do
   require Logger
-  @batch_size 25
+  @batch_size 50
+
+  @dialyzer {:no_match, store_transactions: 2}
+  @dialyzer {:no_match, store_inherents: 2}
 
   def start(start_number, end_number, delete) do
     start_number..end_number
@@ -17,8 +20,14 @@ defmodule Indexer.Tasks.Index do
     end
   end
 
-  # TODO: implement block removal
-  def delete_block(_number, _delete), do: :ok
+  def delete_block(_number, false), do: :ok
+
+  def delete_block(block_number, true) do
+    with :ok <- Indexer.Model.Transactions.delete_by_block_number(block_number),
+         :ok <- Indexer.Model.Inherents.delete_by_block_number(block_number) do
+      :ok
+    end
+  end
 
   defp index_transactions(block_number) do
     case Indexer.get_transactions_by_block_number(block_number) do

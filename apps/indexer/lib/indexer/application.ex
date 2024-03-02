@@ -29,11 +29,12 @@ defmodule Indexer.Application do
          url: "mongodb://localhost:27017/albatross",
          username: "albatross",
          password: "safepasswordorsomething",
-         pool_size: 3,
+         pool_size: System.schedulers_online(),
          auth_source: "admin"
        ]},
       {PartitionSupervisor, child_spec: Task.Supervisor, name: Indexer.TaskSupervisors},
-      Indexer.Processes.LiveSyncer
+      Indexer.Processes.LiveSyncer,
+      Indexer.Processes.JobSyncer
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html

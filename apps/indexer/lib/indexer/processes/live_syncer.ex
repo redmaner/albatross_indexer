@@ -3,9 +3,10 @@ defmodule Indexer.Processes.LiveSyncer do
   use GenServer
 
   @check_height_frequency :timer.seconds(30)
+  @dialyzer {:no_match, handle_continue: 2}
 
   def init(_) do
-    state = %{cursor: 0, tasks: %{}, pending_height: 0}
+    state = %{cursor: 0, tasks: %{}}
     {:ok, state, {:continue, :check_status}}
   end
 
@@ -56,7 +57,7 @@ defmodule Indexer.Processes.LiveSyncer do
 
     Stream.iterate(0, &(&1 + 1))
     |> Enum.reduce_while({[], genesis_height}, fn _, {jobs, start_number} ->
-      end_number = min(current_height, start_number + 10000)
+      end_number = min(current_height, start_number + 1000)
       continue = end_number < current_height
 
       jobs = [Indexer.Model.SyncerJobs.new_job(start_number + 1, end_number) | jobs]
@@ -121,12 +122,14 @@ defmodule Indexer.Processes.LiveSyncer do
       when new_height > old_height do
     Logger.info("New height. Syncing blocks from #{old_height} to #{new_height}")
 
+    old_height = old_height + 1
+
     %Task{ref: ref} =
       Task.Supervisor.async(
         {:via, PartitionSupervisor, {Indexer.TaskSupervisors, self()}},
         Indexer.Tasks.Index,
         :start,
-        [old_height + 1, new_height, false]
+        [old_height, new_height, false]
       )
 
     new_tasks = tasks |> Map.put(ref, new_task_state(old_height, new_height))
@@ -138,7 +141,6 @@ defmodule Indexer.Processes.LiveSyncer do
 
   def should_sync_new_blocks?(_new_height, state) do
     Process.send_after(self(), :check_height, @check_height_frequency)
-    Logger.info("Chain not progressed for indexing, checking in 60 secs")
     {:noreply, state}
   end
 

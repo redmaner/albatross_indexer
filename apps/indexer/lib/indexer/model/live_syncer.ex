@@ -26,16 +26,38 @@ defmodule Indexer.Model.LiveSyncer do
   end
 
   defp create_indexes(session) do
-    Mongo.create_indexes(
-      @name,
-      "transactions",
-      [
-        [name: "transactions_idx_block_number", key: [blockNumber: -1]],
-        [name: "transactions_idx_from", key: [from: -1]],
-        [name: "transactions_idx_to", key: [to: -1]]
-      ],
-      session: session
-    )
+    :ok =
+      Mongo.create_indexes(
+        @name,
+        "transactions",
+        [
+          [name: "transactions_idx", key: [from: -1, to: -1, blockNumber: -1]],
+        ],
+        session: session
+      )
+
+    :ok =
+      Mongo.create_indexes(
+        @name,
+        "inherents",
+        [
+          [name: "inherents_idx", key: [blockNumber: -1]]
+        ],
+        session: session
+      )
+
+    :ok =
+      Mongo.create_indexes(
+        @name,
+        "syncer_jobs",
+        [
+          [name: "syncer_jobs_idx", key: [end_number: -1]]
+        ],
+        session: session
+      )
+  rescue
+    MatchError ->
+      {:error, :failed_to_create_index}
   end
 
   def update_live_cursor(new_cursor) do
