@@ -47,4 +47,9 @@ defmodule Indexer.Model.SyncerJobs do
     @name
     |> Mongo.find(@collection_name, %{status: status}, limit: count, sort: %{"end_number" => -1})
   end
+
+  def count_jobs_by_status(status \\ "NEW") do
+    @name
+    |> Mongo.count_documents(@collection_name, %{status: status})
+  end
 end

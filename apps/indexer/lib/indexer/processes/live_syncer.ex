@@ -1,4 +1,9 @@
 defmodule Indexer.Processes.LiveSyncer do
+  @moduledoc """
+  LiveSyncer is responsible for keeping track of the tip of the blockchain. When the tip
+  of the blockchain is progressed a new Indexer.Task.Index is run as Task under a
+  Task.Supervisor
+  """
   require Logger
   use GenServer
 
@@ -25,7 +30,6 @@ defmodule Indexer.Processes.LiveSyncer do
         {:shutdown, reason}
 
       %{docs: docs} when docs == [] ->
-        Logger.info("Got empty cursor")
         {:noreply, state, {:continue, :init_state}}
 
       %{docs: [%{"cursor" => cursor}]} ->
@@ -36,6 +40,9 @@ defmodule Indexer.Processes.LiveSyncer do
     end
   end
 
+  # init_state is ran on the very first time when no live_syncer state
+  # is stored in MongoDB. When this is the case a new cursor is created
+  # and syncer jobs are created from genesis to the curren cursor.
   def handle_continue(:init_state, state) do
     with {:ok, number} <- get_current_height(),
          :ok <- create_history_syncer_jobs(number),
@@ -75,8 +82,8 @@ defmodule Indexer.Processes.LiveSyncer do
     Indexer.Model.SyncerJobs.insert_many(jobs)
   end
 
+  # Ran when an index task was completed succesfully
   def handle_info({ref, :ok}, state = %{tasks: tasks}) do
-    # We don't care about the DOWN message now, so let's demonitor and flush it
     Process.demonitor(ref, [:flush])
 
     {task, tasks} = tasks |> Map.pop(ref, :not_found)
@@ -95,17 +102,18 @@ defmodule Indexer.Processes.LiveSyncer do
         end
     end
 
-    # Do something with the result and then return
     {:noreply, %{state | tasks: tasks}}
   end
 
-  # The task failed
+  # TODO: implement this
+  # Ran when a task is failed
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
-    # Log and possibly restart the task...
     Logger.warning("One task was down: HANDLE THIS")
     {:noreply, state}
   end
 
+  # This is ran periodically to check for a new height.
+  # When the chain is progressed we start a new index task.
   def handle_info(:check_height, state) do
     get_current_height()
     |> should_sync_new_blocks?(state)

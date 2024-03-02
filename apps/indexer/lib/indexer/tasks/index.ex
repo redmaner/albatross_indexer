@@ -1,10 +1,22 @@
 defmodule Indexer.Tasks.Index do
+  @moduledoc """
+  Module that is meant to be run as a Task using a Task.Supervisor
+  This module is responsible for indexing transactions and inherents for a range of blocks
+  """
+
   require Logger
-  @batch_size 50
+  @batch_size 25
 
   @dialyzer {:no_match, store_transactions: 2}
   @dialyzer {:no_match, store_inherents: 2}
 
+  @doc """
+  start indexing a range of blocks
+  * start_number => start of the block range
+  * end_number => end of the blcok range
+  * delete => remove resources for the block before inserting new resources
+  """
+  @spec start(integer(), integer(), boolean()) :: :ok | {:error, term()}
   def start(start_number, end_number, delete) do
     start_number..end_number
     |> Enum.reduce_while(:ok, &index(&1, &2, delete))

@@ -31,7 +31,7 @@ defmodule Indexer.Model.LiveSyncer do
         @name,
         "transactions",
         [
-          [name: "transactions_idx", key: [from: -1, to: -1, blockNumber: -1]],
+          [name: "transactions_idx", key: [from: -1, to: -1, blockNumber: -1]]
         ],
         session: session
       )
@@ -67,7 +67,7 @@ defmodule Indexer.Model.LiveSyncer do
              @name,
              @collection_name,
              %{_id: @live_id},
-             %{"$set": %{cursor: new_cursor}},
+             %{"$max": %{cursor: new_cursor}},
              session: session
            ),
          :ok <- Mongo.Session.commit_transaction(session),

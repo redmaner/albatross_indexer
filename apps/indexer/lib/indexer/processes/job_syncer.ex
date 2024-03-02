@@ -1,9 +1,15 @@
 defmodule Indexer.Processes.JobSyncer do
+  @moduledoc """
+  JobSyncer is responsible for handling syncer jobs. Syncer jobs are
+  indexed using Indexer.Task.Index under a Task.Supervisor.
+  Syncer jobs are stored in MongoDB. We create syncer jobs to index
+  historic data, but we can also create syncer jobs to reindex data.
+  """
   require Logger
   use GenServer
 
   @max_concurrent_jobs 8
-  @load_job_frequency :timer.seconds(120)
+  @load_job_frequency :timer.seconds(300)
 
   def init(_) do
     state = %{tasks: %{}, load_job_timer: nil}
@@ -18,6 +24,8 @@ defmodule Indexer.Processes.JobSyncer do
     GenServer.start_link(__MODULE__, [], name: {:global, __MODULE__})
   end
 
+  # On startup we continue syncer jobs that were IN_PROGRESS
+  # These jobs were not completed the last time the application ran.
   def handle_continue(:continue_in_progress, state = %{tasks: tasks}) do
     case Indexer.Model.SyncerJobs.get_by_status("IN_PROGRESS", 0) do
       {:error, reason} ->
@@ -46,8 +54,21 @@ defmodule Indexer.Processes.JobSyncer do
     end
   end
 
+  # Load jobs is ran periodically to load new jobs. We only run a max
+  # amount of jobs at a time.
   def handle_info(:load_jobs, state = %{tasks: tasks})
       when map_size(tasks) >= @max_concurrent_jobs do
+    case Indexer.Model.SyncerJobs.count_jobs_by_status("NEW") do
+      {:ok, count} when count > 0 ->
+        Logger.info("Currently #{map_size(tasks)} jobs are being indexed. #{count} pending")
+
+      {:ok, _count} ->
+        :ok
+
+      {:error, reason} ->
+        Logger.error("Failed to count pending jobs: #{inspect(reason)}")
+    end
+
     timer = Process.send_after(self(), :load_jobs, @load_job_frequency)
     {:noreply, %{state | load_job_timer: timer}}
   end
@@ -79,12 +100,12 @@ defmodule Indexer.Processes.JobSyncer do
     end
   end
 
+  # Received when an index task was completed successfully.
   def handle_info({ref, :ok}, state = %{tasks: tasks, load_job_timer: timer}) do
     if timer do
       Process.cancel_timer(timer)
     end
 
-    # We don't care about the DOWN message now, so let's demonitor and flush it
     Process.demonitor(ref, [:flush])
 
     {task, tasks} = tasks |> Map.pop(ref, :not_found)
@@ -109,9 +130,9 @@ defmodule Indexer.Processes.JobSyncer do
     {:noreply, %{state | tasks: tasks}}
   end
 
-  # The task failed
+  # TODO: implement this
+  # Received when an index task failed.
   def handle_info({:DOWN, _ref, :process, _pid, _reason}, state) do
-    # Log and possibly restart the task...
     Logger.warning("One task was down: HANDLE THIS")
     {:noreply, state}
   end
