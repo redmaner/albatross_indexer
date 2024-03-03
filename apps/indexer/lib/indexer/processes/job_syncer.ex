@@ -8,11 +8,15 @@ defmodule Indexer.Processes.JobSyncer do
   require Logger
   use GenServer
 
-  @max_concurrent_jobs 32
   @load_job_frequency :timer.seconds(300)
 
   def init(_) do
-    state = %{tasks: %{}, load_job_timer: nil}
+    state = %{
+      tasks: %{},
+      load_job_timer: nil,
+      max_jobs: Application.get_env(:indexer, :max_syncer_jobs)
+    }
+
     {:ok, state, {:continue, :continue_in_progress}}
   end
 
@@ -56,8 +60,8 @@ defmodule Indexer.Processes.JobSyncer do
 
   # Load jobs is ran periodically to load new jobs. We only run a max
   # amount of jobs at a time.
-  def handle_info(:load_jobs, state = %{tasks: tasks})
-      when map_size(tasks) >= @max_concurrent_jobs do
+  def handle_info(:load_jobs, state = %{tasks: tasks, max_jobs: max_jobs})
+      when map_size(tasks) >= max_jobs do
     case Indexer.Model.SyncerJobs.count_jobs_by_status("NEW") do
       {:ok, count} when count > 0 ->
         Logger.info("Currently #{map_size(tasks)} jobs are being indexed. #{count} pending")
@@ -73,8 +77,8 @@ defmodule Indexer.Processes.JobSyncer do
     {:noreply, %{state | load_job_timer: timer}}
   end
 
-  def handle_info(:load_jobs, state = %{tasks: tasks}) do
-    remaining_jobs = max(@max_concurrent_jobs - map_size(tasks), 1)
+  def handle_info(:load_jobs, state = %{tasks: tasks, max_jobs: max_jobs}) do
+    remaining_jobs = max(max_jobs - map_size(tasks), 1)
 
     case Indexer.Model.SyncerJobs.get_by_status("NEW", remaining_jobs) do
       {:error, reason} ->

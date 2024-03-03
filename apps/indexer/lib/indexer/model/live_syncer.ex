@@ -31,7 +31,8 @@ defmodule Indexer.Model.LiveSyncer do
         @name,
         "transactions",
         [
-          [name: "transactions_idx", key: [from: -1, to: -1, blockNumber: -1]]
+          [name: "transactions_idx_address", key: [from: -1, to: -1]],
+          [name: "transactions_idx_number", key: [blockNumber: -1]]
         ],
         session: session
       )
@@ -41,7 +42,7 @@ defmodule Indexer.Model.LiveSyncer do
         @name,
         "inherents",
         [
-          [name: "inherents_idx", key: [blockNumber: -1]]
+          [name: "inherents_idx_number", key: [blockNumber: -1]]
         ],
         session: session
       )

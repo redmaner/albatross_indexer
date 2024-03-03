@@ -1,5 +1,4 @@
 defmodule Indexer do
-
   alias Nimiqex.RPC.Blockchain
 
   @doc """

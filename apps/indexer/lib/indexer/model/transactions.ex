@@ -29,4 +29,14 @@ defmodule Indexer.Model.Transactions do
       :ok
     end
   end
+
+  def get_latest_block_number() do
+    @name
+    |> Mongo.find(@collection_name, %{}, order: %{blockNumber: -1}, limit: 1)
+    |> case do
+      %{docs: docs} when docs == [] -> {:ok, -1}
+      %{docs: [%{"blockNumber" => number}]} -> {:ok, number}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 end

@@ -29,7 +29,7 @@ defmodule Indexer.MixProject do
       # {:dep_from_hexpm, "~> 0.3.0"},
       # {:dep_from_git, git: "https://github.com/elixir-lang/my_dep.git", tag: "0.1.0"},
       # {:sibling_app_in_umbrella, in_umbrella: true}
-      {:nimiqex, git: "git@github.com:redmaner/nimiqex.git", tag: "0.7.0"},
+      {:nimiqex, git: "git@github.com:redmaner/nimiqex.git", tag: "0.8.0"},
       {:mongodb_driver, "~> 1.4"}
     ]
   end

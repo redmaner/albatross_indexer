@@ -132,6 +132,11 @@ defmodule Indexer.Processes.LiveSyncer do
       when new_height > old_height do
     Logger.info("New height. Syncing blocks from #{old_height} to #{new_height}")
 
+    should_delete = case Indexer.Model.Transactions.get_latest_block_number() do
+      {:ok, indexed_number} -> indexed_number > old_height
+      _other -> true
+    end
+
     old_height = old_height + 1
 
     %Task{ref: ref} =
@@ -139,7 +144,7 @@ defmodule Indexer.Processes.LiveSyncer do
         {:via, PartitionSupervisor, {Indexer.TaskSupervisors, self()}},
         Indexer.Tasks.Index,
         :start,
-        [old_height, new_height, false]
+        [old_height, new_height, should_delete]
       )
 
     new_tasks = tasks |> Map.put(ref, new_task_state(old_height, new_height))
