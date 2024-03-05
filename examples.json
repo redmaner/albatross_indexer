@@ -1,0 +1,18 @@
+[
+    {
+        "blockNumber": 17548809,
+        "blockTime": 1709314321218,
+        "offenseEventBlock": 17548809,
+        "type": "penalize",
+        "validatorAddress": "NQ56 BBC5 B9RR PRT9 6V21 TJJ7 PJQ0 N5KA ELAU"
+    },
+    {
+        "blockNumber": 17866544,
+        "blockTime": 1709627688458,
+        "hash": "89015a7bea24d375c0c3b191dd94fe8746201015eb7b21fd76359a8df93c2d3a",
+        "target": "NQ53 LC70 JHGH UEMV 2CAB DFQL JKHQ 21FS D3AY",
+        "type": "reward",
+        "validatorAddress": "NQ84 3NMP N7X3 90XQ G8PB 48V3 M15Y B9V0 6C41",
+        "value": 8886521
+    }
+]

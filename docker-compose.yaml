@@ -3,6 +3,23 @@ version: '3.1'
 
 services:
 
+  db:
+    image: mariadb:10-jammy
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: albatross-example-root-password
+      MARIADB_DATABASE: albatross
+      MARIADB_USER: indexer
+      MARIADB_PASSWORD: indexer-password
+    ports:
+      - 3306:3306
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
   mongo:
     image: mongo:7-jammy
     restart: always

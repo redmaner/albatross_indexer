@@ -13,6 +13,7 @@ defmodule Indexer.Application do
     rpc_auth = rpc_username != "" and rpc_password != ""
 
     mongo_opts = Application.get_env(:mongo_db, :opts)
+    mariadb_opts = Application.get_env(:mariadb, :opts)
 
     children = [
       # Starts a worker by calling: Indexer.Worker.start_link(arg)
@@ -29,6 +30,7 @@ defmodule Indexer.Application do
          ),
        name: Indexer.RPCPartition},
       {Mongo, mongo_opts},
+      {MyXQL, mariadb_opts},
       {PartitionSupervisor, child_spec: Task.Supervisor, name: Indexer.TaskSupervisors},
       Indexer.Processes.LiveSyncer,
       Indexer.Processes.JobSyncer

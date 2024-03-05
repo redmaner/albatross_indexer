@@ -26,19 +26,19 @@ defmodule Indexer.Processes.LiveSyncer do
   end
 
   def handle_continue(:check_status, state) do
-    case Indexer.Model.LiveSyncer.get_live_state() do
-      {:error, reason} ->
-        Logger.error("Error when retrieving state: #{inspect(reason)}")
-        {:shutdown, reason}
-
-      %{docs: docs} when docs == [] ->
+    case Indexer.Model.Cursors.get_live_cursor() do
+      {:error, :not_found} ->
         {:noreply, state, {:continue, :init_state}}
 
-      %{docs: [%{"cursor" => cursor}]} ->
+      {:ok, cursor} ->
         Logger.info("Got a cursor: #{inspect(cursor)}")
         Process.send(self(), :check_height, [])
 
         {:noreply, %{state | cursor: cursor}}
+
+      {:error, reason} ->
+        Logger.error("Error when retrieving state: #{inspect(reason)}")
+        {:shutdown, reason}
     end
   end
 
@@ -48,7 +48,7 @@ defmodule Indexer.Processes.LiveSyncer do
   def handle_continue(:init_state, state) do
     with {:ok, number} <- get_current_height(),
          :ok <- create_history_syncer_jobs(number),
-         :ok <- Indexer.Model.LiveSyncer.init_live_state(number) do
+         :ok <- Indexer.Model.Cursors.new_live_cursor(number) do
       Logger.info("Initialised new state")
 
       Process.send(self(), :check_height, [])
@@ -95,7 +95,7 @@ defmodule Indexer.Processes.LiveSyncer do
         Logger.warning("Unknown task reference received")
 
       %{start_number: start_number, end_number: end_number} ->
-        case Indexer.Model.LiveSyncer.update_live_cursor(end_number) do
+        case Indexer.Model.Cursors.update_live_cursor(end_number) do
           :ok ->
             Logger.info("Indexing from #{start_number} to #{end_number} complete")
 
@@ -132,10 +132,11 @@ defmodule Indexer.Processes.LiveSyncer do
       when new_height > old_height do
     Logger.info("New height. Syncing blocks from #{old_height} to #{new_height}")
 
-    should_delete = case Indexer.Model.Transactions.get_latest_block_number() do
-      {:ok, indexed_number} -> indexed_number > old_height
-      _other -> true
-    end
+    should_delete =
+      case Indexer.Model.Transactions.get_latest_block_number() do
+        {:ok, indexed_number} -> indexed_number > old_height
+        _other -> true
+      end
 
     old_height = old_height + 1
 
