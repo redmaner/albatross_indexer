@@ -8,7 +8,7 @@ defmodule Indexer.Processes.JobSyncer do
   require Logger
   use GenServer
 
-  @load_job_frequency :timer.seconds(300)
+  @load_job_frequency :timer.seconds(60)
 
   def init(_) do
     state = %{
@@ -30,19 +30,19 @@ defmodule Indexer.Processes.JobSyncer do
 
   # On startup we continue syncer jobs that were IN_PROGRESS
   # These jobs were not completed the last time the application ran.
-  def handle_continue(:continue_in_progress, state = %{tasks: tasks}) do
-    case Indexer.Model.SyncerJobs.get_by_status("IN_PROGRESS", 0) do
+  def handle_continue(:continue_in_progress, state = %{tasks: tasks, max_jobs: max_jobs}) do
+    case Indexer.Model.SyncerJobs.get_by_status("IN_PROGRESS", max_jobs) do
       {:error, reason} ->
         Logger.error("failed to get syncer jobs IN_PROGRESS: #{inspect(reason)}")
         {:shutdown, :error}
 
-      %{docs: docs} when docs == [] ->
+      {:ok, docs} when docs == [] ->
         Logger.info("no in progress syncer jobs found")
         Process.send_after(self(), :load_jobs, :timer.seconds(20))
 
         {:noreply, state}
 
-      %{docs: docs} when is_list(docs) ->
+      {:ok, docs} when is_list(docs) ->
         Logger.info("Starting #{length(docs)} jobs with status IN_PROGRESS")
 
         timer = Process.send_after(self(), :load_jobs, @load_job_frequency)
@@ -85,11 +85,11 @@ defmodule Indexer.Processes.JobSyncer do
         Logger.error("failed to get syncer jobs NEW: #{inspect(reason)}")
         {:shutdown, :error}
 
-      %{docs: docs} when docs == [] ->
+      {:ok, docs} when docs == [] ->
         timer = Process.send_after(self(), :load_jobs, @load_job_frequency)
         {:noreply, %{state | load_job_timer: timer}}
 
-      %{docs: docs} when is_list(docs) ->
+      {:ok, docs} when is_list(docs) ->
         timer = Process.send_after(self(), :load_jobs, @load_job_frequency)
 
         case start_jobs(tasks, docs) do
@@ -147,7 +147,7 @@ defmodule Indexer.Processes.JobSyncer do
 
   def start_job(
         %{
-          "_id" => job_id,
+          "id" => job_id,
           "end_number" => end_number,
           "start_number" => start_number,
           "status" => status,

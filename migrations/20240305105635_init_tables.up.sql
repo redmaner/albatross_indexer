@@ -22,8 +22,7 @@ CREATE TABLE IF NOT EXISTS `transactions` (
 );
 
 CREATE INDEX `txs_idx_block_number_desc` ON `transactions` (blockNumber DESC);
-CREATE INDEX `txs_idx_address_from` ON `transactions` (`from`);
-CREATE INDEX `txs_idx_address_to` ON `transactions` (`to`);
+CREATE INDEX `txs_idx_address_address` ON `transactions` (`from`, `to`);
 
 CREATE TABLE IF NOT EXISTS `inherents` (
     `id` MEDIUMINT NOT NULL AUTO_INCREMENT,

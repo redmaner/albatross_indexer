@@ -7,7 +7,6 @@ defmodule Indexer.Tasks.Index do
   require Logger
   @batch_size 100
 
-  @dialyzer {:no_match, store_transactions: 2}
   @dialyzer {:no_match, store_inherents: 2}
 
   @doc """
@@ -16,7 +15,15 @@ defmodule Indexer.Tasks.Index do
   * end_number => end of the blcok range
   * delete => remove resources for the block before inserting new resources
   """
-  @spec start(integer(), integer(), boolean()) :: :ok | {:error, term()}
+  @spec start(integer(), integer(), boolean() | integer()) :: :ok | {:error, term()}
+  def start(start_number, end_number, 1) do
+    start(start_number, end_number, true)
+  end
+
+  def start(start_number, end_number, delete) when is_integer(delete) do
+    start(start_number, end_number, false)
+  end
+
   def start(start_number, end_number, delete) do
     start_number..end_number
     |> Enum.reduce_while(:ok, &index(&1, &2, delete))

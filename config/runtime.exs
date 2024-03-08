@@ -6,7 +6,7 @@ config :nimiq_rpc,
   password: System.get_env("NIMIQ_RPC_PASSWORD", "")
 
 config :indexer,
-  max_syncer_jobs: System.schedulers_online() * 2
+  max_syncer_jobs: 32
 
 config :mongo_db,
   opts: [
@@ -26,5 +26,5 @@ config :mariadb,
     password: System.get_env("DB_PASSWORD", "indexer-password"),
     database: System.get_env("DB_DATABASE", "albatross"),
     name: :mariadb,
-    pool_size: System.schedulers_online() * 2
+    pool_size: 100
   ]

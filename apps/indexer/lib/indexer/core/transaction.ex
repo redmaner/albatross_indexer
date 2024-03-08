@@ -1,8 +1,7 @@
 defmodule Indexer.Core.Transaction do
-  def map_and_enrich(transaction = %{"hash" => hash}) do
+  def map_and_enrich(transaction) do
     transaction
-    |> Map.put("_id", hash)
-    |> Map.drop(["hash"])
+    |> Map.put("enriched", %{})
     |> enrich_recipient_data()
     |> enrich_sender_data()
   end

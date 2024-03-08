@@ -2,41 +2,78 @@ defmodule Indexer.Model.Transactions do
   @moduledoc """
   Model to interact with the `transactions` collections in MongoDB
   """
+  import Indexer.Db
+  @name :mariadb
 
-  @name :mongo
-  @collection_name "transactions"
-
-  @dialyzer {:no_match, insert_many: 1}
+  @insert_statement "INSERT INTO `transactions` (`hash`, `from`, `fromType`, `to`, `toType`, `blockNumber`, `value`, `fee`, `executionResult`, `recipientData`, `senderData`, `proof`, `confirmations`, `validityStartHeight`, `timestamp`, `flags`, `networkId`) VALUES "
+  @insert_values "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 
   def insert_many(transactions) do
-    with {:ok, session} <- Mongo.Session.start_session(@name, :write),
-         {:ok, _result} <-
-           Mongo.insert_many(@name, @collection_name, transactions, session: session),
-         :ok <- Mongo.Session.commit_transaction(session),
-         :ok <- Mongo.Session.end_session(@name, session) do
-      :ok
+    case prepare_insert_many(
+           @insert_statement,
+           @insert_values,
+           transactions,
+           &parse_transaction_to_row/1
+         ) do
+      {:ok, statement, args} ->
+        MyXQL.query(@name, statement, args)
+        |> unwrap_no_return()
+
+      error ->
+        error
     end
+  end
+
+  defp parse_transaction_to_row(%{
+        "hash" => hash,
+        "from" => from,
+        "fromType" => from_type,
+        "to" => to,
+        "toType" => to_type,
+        "blockNumber" => block_number,
+        "value" => value,
+        "fee" => fee,
+        "executionResult" => execution_result,
+        "recipientData" => recipient_data,
+        "senderData" => sender_data,
+        "proof" => proof,
+        "confirmations" => confirmations,
+        "validityStartHeight" => validity_start_height,
+        "timestamp" => timestamp,
+        "flags" => flags,
+        "networkId" => network_id
+      }) do
+    [
+      hash,
+      from,
+      from_type,
+      to,
+      to_type,
+      block_number,
+      value,
+      fee,
+      execution_result,
+      recipient_data,
+      sender_data,
+      proof,
+      confirmations,
+      validity_start_height,
+      timestamp,
+      flags,
+      network_id
+    ]
   end
 
   def delete_by_block_number(block_number) do
-    with {:ok, session} <- Mongo.Session.start_session(@name, :write),
-         {:ok, _result} <-
-           Mongo.delete_many(@name, @collection_name, %{"blockNumber" => block_number},
-             session: session
-           ),
-         :ok <- Mongo.Session.commit_transaction(session),
-         :ok <- Mongo.Session.end_session(@name, session) do
-      :ok
-    end
+    MyXQL.query(@name, "DELETE FROM `transactions` WHERE blockNumber = ?", [block_number])
+    |> unwrap_no_return()
   end
 
   def get_latest_block_number() do
-    @name
-    |> Mongo.find(@collection_name, %{}, order: %{blockNumber: -1}, limit: 1)
-    |> case do
-      %{docs: docs} when docs == [] -> {:ok, -1}
-      %{docs: [%{"blockNumber" => number}]} -> {:ok, number}
-      {:error, reason} -> {:error, reason}
-    end
+    MyXQL.query(
+      @name,
+      "SELECT `blockNumber` from `transactions` ORDER BY blockNumber DESC LIMIT 1"
+    )
+    |> unwrap_number()
   end
 end
